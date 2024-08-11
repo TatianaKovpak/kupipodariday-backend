@@ -26,7 +26,7 @@ export class OffersService {
       throw new BadRequestException('Сумма больше, чем остаток сбора');
     }
 
-    await this.wishesService.update(createOfferDto.itemId, {
+    await this.wishesService.updateWishRaised(createOfferDto.itemId, {
       raised: Number(wish.raised) + createOfferDto.amount,
     } as UpdateWishDto);
 
