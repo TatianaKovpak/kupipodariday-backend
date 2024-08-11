@@ -58,20 +58,36 @@ export class WishesService {
     return wishes;
   }
 
-  async update(id: number, updateWishDto: UpdateWishDto): Promise<Wish> {
+  async update(
+    id: number,
+    updateWishDto: UpdateWishDto,
+    userId,
+  ): Promise<Wish> {
     const wish = await this.findWishById(id);
     if (wish.offers.length > 0 && updateWishDto.price > 0) {
       throw new BadRequestException(
         'Нельзя изменить стоимость подарка, на который уже скинулись',
       );
     }
+    if (wish.owner.id !== userId) {
+      throw new BadRequestException('Нельзя редактировать чужие подарки');
+    }
+    await this.wishRepository.update(id, updateWishDto);
+    return wish;
+  }
+
+  async updateWishRaised(
+    id: number,
+    updateWishDto: UpdateWishDto,
+  ): Promise<Wish> {
+    const wish = await this.findWishById(id);
     await this.wishRepository.update(id, updateWishDto);
     return wish;
   }
 
   async remove(id: number, user) {
     const wish = await this.findWishById(id);
-    if (wish.offers.length > 0) {
+    if (wish.raised > 0) {
       throw new BadRequestException(
         'Нельзя удалить подарок, на который уже скинулись',
       );
@@ -85,13 +101,21 @@ export class WishesService {
   }
 
   async copy(wishId: number, userId) {
-    const { id, copied, ...CreateWishDto } = await this.findWishById(wishId);
+    const { id, copied, link, ...CreateWishDto } =
+      await this.findWishById(wishId);
     const owner = await this.userService.findOwn(userId);
+    const wishes = await this.userService.getOwnWishes(userId);
+    if (wishes.find((i) => i.link === link)) {
+      throw new BadRequestException(
+        ' В вашем списке желаний уже есть такой подарок',
+      );
+    }
     await this.wishRepository.update(id, { copied: copied + 1 });
     return this.wishRepository.save({
       ...CreateWishDto,
       raised: 0,
       owner,
+      link,
     });
   }
 

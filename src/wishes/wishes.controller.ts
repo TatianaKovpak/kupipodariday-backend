@@ -46,8 +46,9 @@ export class WishesController {
   update(
     @Param('id') id: number,
     @Body() updateWishDto: UpdateWishDto,
+    @Req() req,
   ): Promise<Wish> {
-    return this.wishesService.update(id, updateWishDto);
+    return this.wishesService.update(id, updateWishDto, req.user.id);
   }
 
   @UseGuards(JwtAuthGuard)
